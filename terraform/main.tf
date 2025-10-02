@@ -5,13 +5,13 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-  }
-
-  cloud {
-    organization = "anhdd01"
-
-    workspaces {
-      name = "bedrock-chat-test"
+    opensearch = {
+      source  = "opensearch-project/opensearch"
+      version = "= 2.2.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.9"
     }
   }
 }
