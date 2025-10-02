@@ -19,40 +19,6 @@ resource "aws_s3_bucket_policy" "frontend" {
   })
 }
 
-resource "null_resource" "build_frontend" {
-  triggers = {
-    api_endpoint = var.api_endpoint
-    user_pool_id = var.user_pool_id
-    user_pool_client_id = var.user_pool_client_id
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      cd ${path.module}/../../../frontend
-      npm install
-      VITE_APP_API_ENDPOINT=${var.api_endpoint} \
-      VITE_APP_WS_ENDPOINT=${var.websocket_endpoint} \
-      VITE_APP_USER_POOL_ID=${var.user_pool_id} \
-      VITE_APP_USER_POOL_CLIENT_ID=${var.user_pool_client_id} \
-      VITE_APP_REGION=${var.aws_region} \
-      VITE_APP_USE_STREAMING=false \
-      npm run build
-    EOT
-  }
-}
-
-resource "null_resource" "deploy_frontend" {
-  triggers = {
-    build_hash = null_resource.build_frontend.id
-  }
-
-  provisioner "local-exec" {
-    command = "aws s3 sync ${path.module}/../../../frontend/dist s3://${var.frontend_bucket_id}/ --delete"
-  }
-
-  depends_on = [null_resource.build_frontend]
-}
-
 resource "aws_cloudfront_distribution" "main" {
   enabled             = true
   default_root_object = "index.html"
@@ -105,6 +71,40 @@ resource "aws_cloudfront_distribution" "main" {
     response_code      = 200
     response_page_path = "/index.html"
   }
+}
 
-  depends_on = [null_resource.deploy_frontend]
+resource "null_resource" "build_frontend" {
+  triggers = {
+    api_endpoint        = var.api_endpoint
+    user_pool_id        = var.user_pool_id
+    user_pool_client_id = var.user_pool_client_id
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      cd ${path.module}/../../../frontend
+      npm install
+      VITE_APP_API_ENDPOINT=${var.api_endpoint} \
+      VITE_APP_WS_ENDPOINT=${var.websocket_endpoint} \
+      VITE_APP_USER_POOL_ID=${var.user_pool_id} \
+      VITE_APP_USER_POOL_CLIENT_ID=${var.user_pool_client_id} \
+      VITE_APP_REGION=${var.aws_region} \
+      VITE_APP_USE_STREAMING=false \
+      npm run build
+    EOT
+  }
+
+  depends_on = [aws_cloudfront_distribution.main]
+}
+
+resource "null_resource" "deploy_frontend" {
+  triggers = {
+    build_hash = null_resource.build_frontend.id
+  }
+
+  provisioner "local-exec" {
+    command = "aws s3 sync ${path.module}/../../../frontend/dist s3://${var.frontend_bucket_id}/ --delete"
+  }
+
+  depends_on = [null_resource.build_frontend]
 }
