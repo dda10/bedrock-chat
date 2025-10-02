@@ -73,27 +73,6 @@ resource "aws_cloudfront_distribution" "main" {
   }
 }
 
-resource "null_resource" "build_frontend" {
-  triggers = {
-    api_endpoint        = var.api_endpoint
-    user_pool_id        = var.user_pool_id
-    user_pool_client_id = var.user_pool_client_id
-  }
 
-  provisioner "local-exec" {
-    command = "bash ${path.module}/../../../deploy-frontend.sh"
-    environment = {
-      VITE_APP_API_ENDPOINT        = var.api_endpoint
-      VITE_APP_WS_ENDPOINT         = var.websocket_endpoint
-      VITE_APP_USER_POOL_ID        = var.user_pool_id
-      VITE_APP_USER_POOL_CLIENT_ID = var.user_pool_client_id
-      VITE_APP_REGION              = var.aws_region
-      VITE_APP_USE_STREAMING       = "false"
-      FRONTEND_BUCKET              = var.frontend_bucket_id
-    }
-  }
-
-  depends_on = [aws_cloudfront_distribution.main]
-}
 
 
