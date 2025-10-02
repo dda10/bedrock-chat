@@ -22,6 +22,45 @@ resource "aws_bedrockagent_knowledge_base" "main" {
       }
     }
   }
+
+  depends_on = [
+    null_resource.create_index
+  ]
+}
+
+resource "null_resource" "create_index" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      sleep 30
+      curl -X PUT "${aws_opensearchserverless_collection.kb.collection_endpoint}/bedrock-knowledge-base-index" \
+        -H "Content-Type: application/json" \
+        --aws-sigv4 "aws:amz:${var.bedrock_region}:aoss" \
+        -d '{
+          "settings": {
+            "index.knn": true
+          },
+          "mappings": {
+            "properties": {
+              "bedrock-knowledge-base-vector": {
+                "type": "knn_vector",
+                "dimension": 1024
+              },
+              "AMAZON_BEDROCK_TEXT_CHUNK": {
+                "type": "text"
+              },
+              "AMAZON_BEDROCK_METADATA": {
+                "type": "text"
+              }
+            }
+          }
+        }'
+    EOT
+  }
+
+  depends_on = [
+    aws_opensearchserverless_collection.kb,
+    aws_opensearchserverless_access_policy.kb
+  ]
 }
 
 # OpenSearch Serverless Collection

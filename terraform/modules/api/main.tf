@@ -47,26 +47,67 @@ resource "aws_iam_role_policy" "lambda" {
   })
 }
 
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../../backend"
+  output_path = "${path.module}/lambda.zip"
+  excludes = [
+    "node_modules",
+    "dist",
+    "dev-dist",
+    ".venv",
+    "__pycache__",
+    "cdk.out",
+    ".vscode",
+    ".DS_Store",
+    ".git",
+    ".github",
+    ".mypy_cache",
+    "examples",
+    "docs",
+    ".env",
+    ".env.local",
+    ".gitignore",
+    "test",
+    "tests",
+    "embedding_statemachine/pdf_ai_ocr",
+    "guardrails"
+  ]
+}
+
 resource "aws_lambda_function" "backend" {
-  filename      = var.lambda_zip_path
-  function_name = "${var.env_prefix}bedrock-chat-backend"
-  role          = aws_iam_role.lambda.arn
-  handler       = "app.main.handler"
-  runtime       = "python3.12"
-  timeout       = 300
-  memory_size   = 1024
+  filename         = data.archive_file.lambda.output_path
+  function_name    = "${var.env_prefix}bedrock-chat-backend"
+  role             = aws_iam_role.lambda.arn
+  handler          = "run.sh"
+  runtime          = "python3.13"
+  timeout          = 900
+  memory_size      = 1024
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+
+  layers = [
+    "arn:aws:lambda:${data.aws_region.current.name}:753240598075:layer:LambdaAdapterLayerX86:23"
+  ]
 
   environment {
     variables = {
-      BEDROCK_REGION     = var.bedrock_region
-      CONVERSATION_TABLE = var.conversation_table_name
-      BOT_TABLE          = var.bot_table_name
-      DOCUMENT_BUCKET    = var.document_bucket_name
-      USER_POOL_ID       = var.user_pool_id
-      CLIENT_ID          = var.user_pool_client_id
+      CONVERSATION_TABLE_NAME = var.conversation_table_name
+      BOT_TABLE_NAME          = var.bot_table_name
+      BEDROCK_REGION          = var.bedrock_region
+      TABLE_ACCESS_ROLE_ARN   = var.table_access_role_arn
+      DOCUMENT_BUCKET         = var.document_bucket_name
+      USER_POOL_ID            = var.user_pool_id
+      CLIENT_ID               = var.user_pool_client_id
+      ACCOUNT                 = data.aws_caller_identity.current.account_id
+      REGION                  = data.aws_region.current.name
+      AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
+      PORT                    = "8000"
     }
   }
 }
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 resource "aws_apigatewayv2_api" "http" {
   name          = "${var.env_prefix}bedrock-chat-api"

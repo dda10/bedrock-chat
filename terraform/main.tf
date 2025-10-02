@@ -80,4 +80,5 @@ module "api" {
   document_bucket_arn     = module.storage.document_bucket.arn
   user_pool_id            = module.auth.user_pool.id
   user_pool_client_id     = module.auth.user_pool_client.id
+  table_access_role_arn   = module.database.table_access_role.arn
 }

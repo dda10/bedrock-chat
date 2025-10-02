@@ -41,3 +41,7 @@ variable "user_pool_id" {
 variable "user_pool_client_id" {
   type = string
 }
+
+variable "table_access_role_arn" {
+  type = string
+}
