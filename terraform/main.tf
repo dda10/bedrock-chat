@@ -56,6 +56,11 @@ module "frontend" {
   frontend_bucket_id                   = module.storage.frontend_bucket.id
   frontend_bucket_arn                  = module.storage.frontend_bucket.arn
   frontend_bucket_regional_domain_name = module.storage.frontend_bucket.bucket_regional_domain_name
+  api_endpoint                         = module.api.api_endpoint
+  websocket_endpoint                   = ""
+  user_pool_id                         = module.auth.user_pool.id
+  user_pool_client_id                  = module.auth.user_pool_client.id
+  aws_region                           = var.aws_region
 }
 
 module "bedrock" {

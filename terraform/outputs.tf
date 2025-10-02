@@ -22,3 +22,8 @@ output "knowledge_base_id" {
   description = "Bedrock Knowledge Base ID"
   value       = module.bedrock.knowledge_base_id
 }
+
+output "frontend_bucket_name" {
+  description = "Frontend S3 bucket name"
+  value       = module.storage.frontend_bucket.bucket
+}
